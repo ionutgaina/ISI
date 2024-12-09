@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../../common/config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import Cookies from "js-cookie";
+import { auth } from "../../common/config/firebase";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -17,7 +17,6 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      // await signInWithEmailAndPassword(auth, email, password);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
 

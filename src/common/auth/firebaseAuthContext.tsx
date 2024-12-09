@@ -5,8 +5,9 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { getAuth, onAuthStateChanged, getIdToken, User } from "firebase/auth";
+import { onAuthStateChanged, getIdToken, User, getAuth } from "firebase/auth";
 import Cookies from "js-cookie";
+import { auth } from "../config/firebase";
 
 // Type definition for the AuthContext state
 interface FirebaseAuthContextType {
@@ -36,7 +37,6 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const auth = getAuth();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
