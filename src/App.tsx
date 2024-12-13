@@ -4,6 +4,7 @@ import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import MapComponent from "./pages/Map/Map";
 import { FirebaseAuthProvider } from "./common/auth/firebaseAuthContext";
+import EquipmentPage from "./pages/Equipment/Equipment";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/map" element={<MapComponent />} />
+          <Route path="/equipment" element={<EquipmentPage />} />
         </Routes>
       </BrowserRouter>
     </FirebaseAuthProvider>
