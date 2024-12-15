@@ -146,13 +146,35 @@ const ArcGISMap: React.FC = () => {
                 {selectedLocation.website}
               </a>
             </p>
-            {selectedLocation.image && (
-              <img
-                src={selectedLocation.image}
-                alt={selectedLocation.name}
-                style={{ width: "100%", height: "auto", marginTop: "10px", borderRadius: "5px" }}
-              />
-            )}
+
+{selectedLocation.image ? (
+  <img
+    src={selectedLocation.image.startsWith("http://") ? 
+      selectedLocation.image.replace("http://", "https://") : 
+      selectedLocation.image}
+    alt={selectedLocation.name}
+    onError={(e) => (e.currentTarget.src = "placeholder.jpg")}
+    style={{
+      width: "100%",
+      height: "auto",
+      marginTop: "10px",
+      borderRadius: "5px",
+    }}
+  />
+) : (
+  <div
+    style={{
+      width: "100%",
+      height: "auto",
+      marginTop: "10px",
+      textAlign: "center",
+    }}
+  >
+    <p>No image available</p>
+  </div>
+)}
+
+
             <button
               onClick={handleSearchEquipment}
               style={{
