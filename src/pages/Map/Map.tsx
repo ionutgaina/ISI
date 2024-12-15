@@ -124,55 +124,69 @@ const ArcGISMap: React.FC = () => {
         <div ref={mapRef} style={{ height: "100%", width: "100%" }}></div>
         {selectedLocation && (
           <div
-            style={{
-              position: "absolute",
-              top: "20px",
-              left: "20px",
-              backgroundColor: "white",
-              padding: "10px",
-              borderRadius: "5px",
-              boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
-              width: "400px",
-              maxHeight: "550px",
-              overflowY: "auto",
-            }}
-          >
-            <h3 style={{ fontSize: "16px", margin: "0 0 10px" }}>{selectedLocation.name}</h3>
-            <p style={{ fontSize: "14px" }}><strong>Sport:</strong> {selectedLocation.sport}</p>
-            <p style={{ fontSize: "14px" }}><strong>Phone:</strong> {selectedLocation.phone_number}</p>
-            <p style={{ fontSize: "14px" }}>
-              <strong>Website:</strong>{" "}
-              <a href={selectedLocation.website} target="_blank" rel="noopener noreferrer" style={{ fontSize: "14px" }}>
-                {selectedLocation.website}
-              </a>
-            </p>
+          style={{
+            position: "absolute",
+            top: "20px",
+            right: "20px", 
+            backgroundColor: "white",
+            padding: "10px",
+            borderRadius: "5px",
+            boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)",
+            width: "400px",
+            maxHeight: "550px",
+            overflowY: "auto",
+            textAlign: "left",
+          }}
+        >
 
-{selectedLocation.image ? (
-  <img
-    src={selectedLocation.image.startsWith("http://") ? 
-      selectedLocation.image.replace("http://", "https://") : 
-      selectedLocation.image}
-    alt={selectedLocation.name}
-    onError={(e) => (e.currentTarget.src = "placeholder.jpg")}
-    style={{
-      width: "100%",
-      height: "auto",
-      marginTop: "10px",
-      borderRadius: "5px",
-    }}
-  />
-) : (
-  <div
-    style={{
-      width: "100%",
-      height: "auto",
-      marginTop: "10px",
-      textAlign: "center",
-    }}
-  >
-    <p>No image available</p>
-  </div>
-)}
+        <h2 style={{ fontSize: "19px", margin: "0 0 10px", textAlign: "left" }}>
+          {selectedLocation.name}
+        </h2>
+        <p style={{ fontSize: "14px", textAlign: "left" }}>
+          <strong>Sport:</strong> {selectedLocation.sport}
+        </p>
+        <p style={{ fontSize: "14px", textAlign: "left" }}>
+          <strong>Phone:</strong> 0{selectedLocation.phone_number}
+        </p>
+        <p style={{ fontSize: "14px", textAlign: "left" }}>
+          <strong>Website:</strong>{" "}
+          <a
+            href={selectedLocation.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: "14px", textAlign: "left" }}
+          >
+            {selectedLocation.website}
+          </a>
+        </p>
+
+
+              {selectedLocation.image ? (
+                <img
+                  src={selectedLocation.image.startsWith("http://") ? 
+                    selectedLocation.image.replace("http://", "https://") : 
+                    selectedLocation.image}
+                  alt={selectedLocation.name}
+                  onError={(e) => (e.currentTarget.src = "placeholder.jpg")}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    marginTop: "10px",
+                    borderRadius: "5px",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    marginTop: "10px",
+                    textAlign: "center",
+                  }}
+                >
+                  <p>No image available</p>
+                </div>
+              )}
 
 
             <button
