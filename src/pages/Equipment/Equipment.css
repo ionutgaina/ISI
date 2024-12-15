@@ -79,18 +79,6 @@
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
-
-/*   
-  .equipment-item .btn {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    text-decoration: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    
-  } */
-  
   .equipment-item .btn {
     background-color: #007bff;
     color: white;
@@ -116,5 +104,20 @@
   p {
     text-align: center;
     font-size: 1.2rem;
+  }
+  
+  .back-button {
+    background-color: #007bff;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 0px;
+    margin-bottom: 10px;
+  }
+  
+  .back-button:hover {
+    background-color: #0056b3;
   }
   

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { db } from "../../common/config/firebase";
 import { ref, onValue } from "firebase/database";
 import Navbar from "../../common/navbar/Navbar";
@@ -7,6 +7,7 @@ import "./Equipment.css";
 
 const EquipmentPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // pentru navigare
   const [equipment, setEquipment] = useState<any[]>([]);
   const [sport, setSport] = useState("");
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,10 @@ const EquipmentPage: React.FC = () => {
     );
   }, [location.search]);
 
+  const handleBackClick = () => {
+    navigate("/map"); // Navighează la pagina '/map'
+  };
+
   return (
     <div className="equipment-page">
       <Navbar />
@@ -56,7 +61,10 @@ const EquipmentPage: React.FC = () => {
         {loading && <p>Loading...</p>}
 
         {error && <p className="error">{error}</p>}
-
+        {/* Butonul de întoarcere */}
+        <button className="back-button" onClick={handleBackClick}>
+          Înapoi la hartă
+        </button>
         {equipment.length > 0 && !loading ? (
           <div className="equipment-list">
             {equipment.map((item, index) => (
@@ -91,3 +99,4 @@ const EquipmentPage: React.FC = () => {
 };
 
 export default EquipmentPage;
+
