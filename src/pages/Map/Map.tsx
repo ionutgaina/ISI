@@ -9,6 +9,7 @@ const ArcGISMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -42,40 +43,58 @@ const ArcGISMap: React.FC = () => {
       onValue(locationsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
+          graphicsLayer.removeAll();
           Object.entries(data).forEach(([sport, locations]) => {
-            (locations as any[]).forEach((location) => {
-              if (location && location.lat && location.lon) {
-                const point = {
-                  type: "point",
-                  longitude: location.lon,
-                  latitude: location.lat,
-                };
+            if (selectedSports.length === 0 || selectedSports.includes(sport)) {
+              (locations as any[]).forEach((location) => {
+                if (location && location.lat && location.lon) {
+                  const point = {
+                    type: "point",
+                    longitude: location.lon,
+                    latitude: location.lat,
+                  };
 
-                const symbol = {
-                  type: "simple-marker",
-                  color: "blue",
-                  size: 8,
-                  outline: {
-                    color: "white",
-                    width: 1,
-                  },
-                };
+                  const symbol = {
+                    type: "simple-marker",
+                    color: "blue",
+                    size: 8,
+                    outline: {
+                      color: "white",
+                      width: 1,
+                    },
+                  };
+                  const sportIcons: Record<string, string> = {
+                          tennis: "/src/assets/tennis.svg",
+                          swimming: "/src/assets/swimming.svg",
+                          gym: "/src/assets/gym.svg",
+                          bouldering: "/src/assets/bouldering.svg",
+                          football: "/src/assets/football.svg",
+                          fighting: "/src/assets/fighting.svg"
+                          // Add more sports and their icons as needed
+                  };
+                  const symbol1 = {
+                    type: "picture-marker",
+                    url:  sportIcons[sport] || "/src/assets/default.svg", 
+                    width: "30px",
+                    height: "30px",
+                  };
 
-                const graphic = new Graphic({
-                  geometry: point,
-                  symbol: symbol,
-                  attributes: {
-                    name: location.name,
-                    sport: sport,
-                    phone_number: location.phone_number || "N/A",
-                    website: location.website || "N/A",
-                    image: location.image || null,
-                  },
-                });
+                  const graphic = new Graphic({
+                    geometry: point,
+                    symbol: symbol1,
+                    attributes: {
+                      name: location.name,
+                      sport: sport,
+                      phone_number: location.phone_number || "N/A",
+                      website: location.website || "N/A",
+                      image: location.image || null,
+                    },
+                  });
 
-                graphicsLayer.add(graphic);
-              }
-            });
+                  graphicsLayer.add(graphic);
+                }
+              });
+            }
           });
         }
       });
@@ -108,7 +127,7 @@ const ArcGISMap: React.FC = () => {
         mapRef.current.innerHTML = "";
       }
     };
-  }, []);
+  }, [selectedSports]);
 
   const handleSearchEquipment = () => {
     if (selectedLocation) {
@@ -119,7 +138,7 @@ const ArcGISMap: React.FC = () => {
 
   return (
     <ProtectedRoute>
-      <Navbar />
+      <Navbar onFilterChange={(sports) => setSelectedSports(sports)}/>
       <div style={{ position: "relative", height: "100vh" }}>
         <div ref={mapRef} style={{ height: "100%", width: "100%" }}></div>
         {selectedLocation && (
