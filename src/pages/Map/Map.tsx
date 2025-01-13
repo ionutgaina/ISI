@@ -21,6 +21,7 @@ const ArcGISMap: React.FC = () => {
   const [userLocation, setUserLocation] = useState<Point | null>(null); // Track user's location
   const [map, setMap] = useState<any>(null);
   const [routeSelected, setRouteSelected] = useState<any>(null);
+  const [routingLayer, setRoutingLayer] = useState<GraphicsLayer | null>(null);
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -57,6 +58,10 @@ const ArcGISMap: React.FC = () => {
       });
 
       setMap(map);
+
+      const newRoutingLayer = new GraphicsLayer();
+      map.add(newRoutingLayer);
+      setRoutingLayer(newRoutingLayer);
 
       // Create the map view
       const view = new MapView({
@@ -188,17 +193,21 @@ const ArcGISMap: React.FC = () => {
   };
 
   const calculateRoute = async () => {
-    if (userLocation && selectedLocation) {
+    if (userLocation && selectedLocation && routingLayer) {
+      // Clear previous route and markers
+      routingLayer.removeAll();
+  
       const location1 = new Point({
         longitude: userLocation.x,
         latitude: userLocation.y,
       });
-
+  
       const location2 = new Point({
         longitude: routeSelected.x,
         latitude: routeSelected.y,
       });
-
+  
+      // Define route parameters
       const routeParams = new RouteParameters({
         stops: new FeatureSet({
           features: [
@@ -212,13 +221,43 @@ const ArcGISMap: React.FC = () => {
         }),
         returnDirections: true,
       });
-
+  
       try {
         const data = await route.solve(
           "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World",
           routeParams
         );
-        displayRoute(data);
+        displayRoute(data); // Display the route first
+  
+        // Add user and destination markers after route is added
+        const userMarker = new Graphic({
+          geometry: location1,
+          symbol: {
+            type: "simple-marker",
+            color: "blue",
+            size: "10px",
+            outline: {
+              color: "white",
+              width: 1,
+            },
+          },
+        });
+        routingLayer.add(userMarker);
+  
+        const destinationMarker = new Graphic({
+          geometry: location2,
+          symbol: {
+            type: "simple-marker",
+            color: "red",
+            size: "10px",
+            outline: {
+              color: "white",
+              width: 1,
+            },
+          },
+        });
+        routingLayer.add(destinationMarker);
+  
       } catch (error) {
         console.error("Error calculating route: ", error);
         alert("Error calculating route");
@@ -227,24 +266,26 @@ const ArcGISMap: React.FC = () => {
       alert("Please select a location and ensure geolocation is enabled.");
     }
   };
+  
 
   const displayRoute = (data: any) => {
-    const routeResult = data.routeResults[0].route;
-    routeResult.symbol = {
-      type: "simple-line",
-      color: [5, 150, 255],
-      width: 3,
-    };
-    const routingLayer = new GraphicsLayer();
-    routingLayer.add(
-      new Graphic({
+    if (routingLayer) {
+      routingLayer.removeAll(); // Ensure no duplicate routes
+
+      const routeResult = data.routeResults[0].route;
+      routeResult.symbol = {
+        type: "simple-line",
+        color: [5, 150, 255],
+        width: 3,
+      };
+
+      const routeGraphic = new Graphic({
         geometry: routeResult.geometry,
         symbol: routeResult.symbol,
-      })
-    );
+      });
 
-    // Add the route to the map
-    map.add(routingLayer);
+      routingLayer.add(routeGraphic);
+    }
   };
 
   return (
@@ -295,7 +336,7 @@ const ArcGISMap: React.FC = () => {
               </a>
             </p>
 
-            {selectedLocation.image ? (
+            {selectedLocation.image !== null ? (
               <img
                 src={
                   selectedLocation.image.startsWith("http://")
@@ -303,7 +344,6 @@ const ArcGISMap: React.FC = () => {
                     : selectedLocation.image
                 }
                 alt={selectedLocation.name}
-                onError={(e) => (e.currentTarget.src = "placeholder.jpg")}
                 style={{
                   width: "100%",
                   height: "auto",
