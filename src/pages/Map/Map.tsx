@@ -319,22 +319,25 @@ const ArcGISMap: React.FC = () => {
       const sport = selectedLocation.sport;
       const id = selectedLocation.id;
       const userId = getAuth().currentUser?.uid;
-  
+
       if (!userId) {
         alert("User not authenticated.");
         return;
       }
-  
+
       // Get a reference to the location's reviews in Firebase
-      const reviewsRef = ref(db, `sport_locations/${sport}/${id}/reviews/${userId}`);
-      
+      const reviewsRef = ref(
+        db,
+        `sport_locations/${sport}/${id}/reviews/${userId}`
+      );
+
       // Check if the user has already submitted a review for this location
       const snapshot = await get(reviewsRef);
       if (snapshot.exists()) {
         alert("You have already reviewed this location.");
         return;
       }
-  
+
       // Create a new review object
       const newReview = {
         user_id: userId,
@@ -342,14 +345,14 @@ const ArcGISMap: React.FC = () => {
         comment: review,
         timestamp: new Date().toISOString(),
       };
-  
+
       // Add the new review
       await set(reviewsRef, newReview);
-  
+
       // Fetch the updated reviews and update the state
       const updatedReviews = await fetchReviews(sport, id);
       setReviews(updatedReviews);
-  
+
       // Clear the form
       setReview("");
       setRating(0);
@@ -357,7 +360,6 @@ const ArcGISMap: React.FC = () => {
       alert("Please provide a rating and a review comment.");
     }
   };
-  
 
   return (
     <ProtectedRoute>
@@ -415,6 +417,9 @@ const ArcGISMap: React.FC = () => {
                     : selectedLocation.image
                 }
                 alt={selectedLocation.name}
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.jpg";
+                }}
                 style={{
                   width: "100%",
                   height: "auto",
