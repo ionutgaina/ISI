@@ -1,7 +1,6 @@
 import React from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { sendDataToFirebase } from "../setData";
 import Select from "react-select";
 
 type NavbarProps = {
@@ -81,19 +80,6 @@ const Navbar: React.FC<NavbarProps> = ({ onFilterChange }) => {
         }}
       >
         Logout
-      </button>
-      <button
-        onClick={() => sendDataToFirebase()}
-        style={{
-          backgroundColor: "#ff5c5c",
-          color: "white",
-          padding: "10px 20px",
-          border: "none",
-          cursor: "pointer",
-          borderRadius: "5px",
-        }}
-      >
-        Send Data
       </button>
     </div>
   );
