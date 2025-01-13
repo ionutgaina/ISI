@@ -13,6 +13,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/map" element={<MapComponent />} />
+          <Route path="*" element={<Login />} />
         </Routes>
       </BrowserRouter>
     </FirebaseAuthProvider>

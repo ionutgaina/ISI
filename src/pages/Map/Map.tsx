@@ -1,102 +1,35 @@
-// import React, { useEffect, useRef } from "react";
-// import ProtectedRoute from "../../common/auth/protectedRoute";
-// import Navbar from "../../common/navbar/Navbar";
-
-// const ArcGISMap: React.FC = () => {
-//   const mapRef = useRef<HTMLDivElement>(null);
-
-//   useEffect(() => {
-//     const initializeMap = async () => {
-//       const [WebMapModule, MapViewModule, TileLayerModule, FeatureLayerModule] =
-//         await Promise.all([
-//           import("@arcgis/core/WebMap"),
-//           import("@arcgis/core/views/MapView"),
-//           import("@arcgis/core/layers/TileLayer"),
-//           import("@arcgis/core/layers/FeatureLayer"),
-//         ]);
-
-//       const WebMap = WebMapModule.default;
-//       const WebMapView = MapViewModule.default;
-//       const TileLayer = TileLayerModule.default;
-//       const FeatureLayer = FeatureLayerModule.default;
-
-//       const tileLayer = new TileLayer({
-//         url: "https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer",
-//         opacity: 0.5,
-//       });
-
-//       const featureLayer = new FeatureLayer({
-//         url: "https://services.arcgis.com/ArcGIS/rest/services/WorldCities/FeatureServer/0",
-//       });
-
-//       const map = new WebMap({
-//         basemap: "topo",
-//         layers: [tileLayer, featureLayer],
-//       });
-
-//       const view = new WebMapView({
-//         container: mapRef.current as HTMLDivElement,
-//         map: map,
-//         center: [-98, 39],
-//         zoom: 5,
-//       });
-
-//       view.when(() => {
-//         console.log("Map is ready");
-//       });
-//     };
-
-//     initializeMap();
-
-//     return () => {
-//       if (mapRef.current) {
-//         mapRef.current.innerHTML = "";
-//       }
-//     };
-//   }, []);
-
-//   return (
-//     <ProtectedRoute>
-//       <Navbar />
-//       <div style={{ position: "relative", height: "100vh" }}>
-//         <div ref={mapRef} style={{ height: "100%", width: "100%" }}></div>
-//       </div>
-//     </ProtectedRoute>
-//   );
-// };
-
-// export default ArcGISMap;
-
-
-
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from "react";
 import ProtectedRoute from "../../common/auth/protectedRoute";
 import Navbar from "../../common/navbar/Navbar";
 import { db } from "../../common/config/firebase";
 import { ref, onValue } from "firebase/database";
-
-
-
-
+import Point from "@arcgis/core/geometry/Point"; // Correct import
 
 const ArcGISMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initializeMap = async () => {
-      const [WebMapModule, MapViewModule, GraphicsLayerModule, GraphicModule] =
-        await Promise.all([
-          import("@arcgis/core/WebMap"),
-          import("@arcgis/core/views/MapView"),
-          import("@arcgis/core/layers/GraphicsLayer"),
-          import("@arcgis/core/Graphic"),
-        ]);
+      const [
+        WebMapModule,
+        MapViewModule,
+        GraphicsLayerModule,
+        GraphicModule,
+        LocateModule,
+      ] = await Promise.all([
+        import("@arcgis/core/WebMap"),
+        import("@arcgis/core/views/MapView"),
+        import("@arcgis/core/layers/GraphicsLayer"),
+        import("@arcgis/core/Graphic"),
+        import("@arcgis/core/widgets/Locate"),
+      ]);
 
       const WebMap = WebMapModule.default;
-      const WebMapView = MapViewModule.default;
+      const MapView = MapViewModule.default;
       const GraphicsLayer = GraphicsLayerModule.default;
       const Graphic = GraphicModule.default;
+      const Locate = LocateModule.default;
 
       // Create a graphics layer
       const graphicsLayer = new GraphicsLayer();
@@ -108,26 +41,38 @@ const ArcGISMap: React.FC = () => {
       });
 
       // Create the map view
-      const view = new WebMapView({
+      const view = new MapView({
         container: mapRef.current as HTMLDivElement,
         map: map,
-        center: [26.1, 44.4], // Center on Bucharest
+        center: [26.1, 44.4],
         zoom: 12,
       });
 
-      // Fetch locations from Firebase and add them to the map
+      const locateWidget = new Locate({
+        view: view,
+        useHeadingEnabled: false,
+        goToOverride: (view, options) => {
+          options.target.scale = 1500;
+          return view.goTo(options.target);
+        },
+      });
+
+      view.ui.add(locateWidget, {
+        position: "top-left",
+      });
+
+      // Add data from Firebase
       const locationsRef = ref(db, "sport_locations");
       onValue(locationsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           Object.entries(data).forEach(([sport, locations]) => {
-            (locations as any[]).forEach((location, index) => {
+            (locations as any[]).forEach((location) => {
               if (location && location.lat && location.lon) {
-                const point = {
-                  type: "point",
-                  longitude: location.lon,
+                const point = new Point({
                   latitude: location.lat,
-                };
+                  longitude: location.lon,
+                });
 
                 const symbol = {
                   type: "simple-marker",
@@ -160,15 +105,15 @@ const ArcGISMap: React.FC = () => {
       view.when(() => {
         console.log("Map is ready");
       });
+
+      return () => {
+        if (mapRef.current) {
+          mapRef.current.innerHTML = "";
+        }
+      };
     };
 
     initializeMap();
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.innerHTML = "";
-      }
-    };
   }, []);
 
   return (
