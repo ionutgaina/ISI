@@ -16,6 +16,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/map" element={<MapComponent />} />
           <Route path="/equipment" element={<EquipmentPage />} />
+          <Route path="*" element={<Login />} />
         </Routes>
       </BrowserRouter>
     </FirebaseAuthProvider>
