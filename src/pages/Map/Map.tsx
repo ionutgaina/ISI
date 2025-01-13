@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ProtectedRoute from "../../common/auth/protectedRoute";
 import Navbar from "../../common/navbar/Navbar";
 import { db } from "../../common/config/firebase";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, set, get, push } from "firebase/database";
 import Point from "@arcgis/core/geometry/Point";
 import { useNavigate } from "react-router-dom";
 import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
@@ -12,16 +12,20 @@ import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import config from "@arcgis/core/config";
+import { getAuth } from "firebase/auth";
 
 const ArcGISMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [userLocation, setUserLocation] = useState<Point | null>(null); // Track user's location
+  const [userLocation, setUserLocation] = useState<Point | null>(null);
   const [map, setMap] = useState<any>(null);
   const [routeSelected, setRouteSelected] = useState<any>(null);
   const [routingLayer, setRoutingLayer] = useState<GraphicsLayer | null>(null);
+  const [review, setReview] = useState<string>(""); // Store the review text
+  const [rating, setRating] = useState<number>(0); // Store the review rating
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -92,7 +96,7 @@ const ArcGISMap: React.FC = () => {
           graphicsLayer.removeAll();
           Object.entries(data).forEach(([sport, locations]) => {
             if (selectedSports.length === 0 || selectedSports.includes(sport)) {
-              (locations as any[]).forEach((location) => {
+              (locations as any[]).forEach((location, index) => {
                 if (location && location.lat && location.lon) {
                   const point = new Point({
                     latitude: location.lat,
@@ -115,7 +119,6 @@ const ArcGISMap: React.FC = () => {
                     width: 30,
                     height: 30,
                   } as __esri.PictureMarkerSymbolProperties;
-
                   const graphic = new Graphic({
                     geometry: point,
                     symbol: symbol1,
@@ -125,6 +128,7 @@ const ArcGISMap: React.FC = () => {
                       phone_number: location.phone_number || "N/A",
                       website: location.website || "N/A",
                       image: location.image || null,
+                      id: index,
                     },
                   });
 
@@ -158,15 +162,21 @@ const ArcGISMap: React.FC = () => {
 
       // Get user geolocation
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          const userPoint = new Point({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            spatialReference: { wkid: 4326 },
-          });
-          setUserLocation(userPoint);
-          view.goTo(userPoint); // Center map on user's location
-        });
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userPoint = new Point({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              spatialReference: { wkid: 4326 },
+            });
+            setUserLocation(userPoint);
+            view.goTo(userPoint); // Center map on user's location
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            alert("Unable to retrieve your location.");
+          }
+        );
       }
 
       return () => {
@@ -185,6 +195,16 @@ const ArcGISMap: React.FC = () => {
     };
   }, [selectedSports]);
 
+  useEffect(() => {
+    if (selectedLocation) {
+      fetchReviews(selectedLocation.sport, selectedLocation.id).then(
+        (reviews) => {
+          setReviews(reviews);
+        }
+      );
+    }
+  }, [selectedLocation]);
+
   const handleSearchEquipment = () => {
     if (selectedLocation) {
       const { sport, name } = selectedLocation;
@@ -196,17 +216,17 @@ const ArcGISMap: React.FC = () => {
     if (userLocation && selectedLocation && routingLayer) {
       // Clear previous route and markers
       routingLayer.removeAll();
-  
+
       const location1 = new Point({
         longitude: userLocation.x,
         latitude: userLocation.y,
       });
-  
+
       const location2 = new Point({
         longitude: routeSelected.x,
         latitude: routeSelected.y,
       });
-  
+
       // Define route parameters
       const routeParams = new RouteParameters({
         stops: new FeatureSet({
@@ -221,14 +241,14 @@ const ArcGISMap: React.FC = () => {
         }),
         returnDirections: true,
       });
-  
+
       try {
         const data = await route.solve(
           "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World",
           routeParams
         );
         displayRoute(data); // Display the route first
-  
+
         // Add user and destination markers after route is added
         const userMarker = new Graphic({
           geometry: location1,
@@ -243,7 +263,7 @@ const ArcGISMap: React.FC = () => {
           },
         });
         routingLayer.add(userMarker);
-  
+
         const destinationMarker = new Graphic({
           geometry: location2,
           symbol: {
@@ -257,7 +277,6 @@ const ArcGISMap: React.FC = () => {
           },
         });
         routingLayer.add(destinationMarker);
-  
       } catch (error) {
         console.error("Error calculating route: ", error);
         alert("Error calculating route");
@@ -266,7 +285,6 @@ const ArcGISMap: React.FC = () => {
       alert("Please select a location and ensure geolocation is enabled.");
     }
   };
-  
 
   const displayRoute = (data: any) => {
     if (routingLayer) {
@@ -287,6 +305,59 @@ const ArcGISMap: React.FC = () => {
       routingLayer.add(routeGraphic);
     }
   };
+
+  const fetchReviews = async (sport: string, id: number) => {
+    const reviewsRef = ref(db, `sport_locations/${sport}/${id}/reviews`);
+    const snapshot = await get(reviewsRef);
+    const reviews = snapshot.val() || {};
+
+    // Convert the reviews object into an array for easier rendering
+    return Object.values(reviews);
+  };
+  const handleSubmitReview = async () => {
+    if (selectedLocation && review && rating > 0) {
+      const sport = selectedLocation.sport;
+      const id = selectedLocation.id;
+      const userId = getAuth().currentUser?.uid;
+  
+      if (!userId) {
+        alert("User not authenticated.");
+        return;
+      }
+  
+      // Get a reference to the location's reviews in Firebase
+      const reviewsRef = ref(db, `sport_locations/${sport}/${id}/reviews/${userId}`);
+      
+      // Check if the user has already submitted a review for this location
+      const snapshot = await get(reviewsRef);
+      if (snapshot.exists()) {
+        alert("You have already reviewed this location.");
+        return;
+      }
+  
+      // Create a new review object
+      const newReview = {
+        user_id: userId,
+        rating: rating,
+        comment: review,
+        timestamp: new Date().toISOString(),
+      };
+  
+      // Add the new review
+      await set(reviewsRef, newReview);
+  
+      // Fetch the updated reviews and update the state
+      const updatedReviews = await fetchReviews(sport, id);
+      setReviews(updatedReviews);
+  
+      // Clear the form
+      setReview("");
+      setRating(0);
+    } else {
+      alert("Please provide a rating and a review comment.");
+    }
+  };
+  
 
   return (
     <ProtectedRoute>
@@ -394,6 +465,65 @@ const ArcGISMap: React.FC = () => {
             >
               Calculate Route
             </button>
+
+            {/* Review Form */}
+            <div>
+              {/* Review Form */}
+              <h3>Leave a Review</h3>
+              <textarea
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                placeholder="Write your review here"
+                rows={4}
+                style={{ width: "100%" }}
+              />
+              <div>
+                <label>Rating: </label>
+                <select
+                  value={rating}
+                  onChange={(e) => setRating(Number(e.target.value))}
+                >
+                  <option value={0}>Select Rating</option>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <option key={star} value={star}>
+                      {star} Star{star > 1 ? "s" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleSubmitReview}
+                style={{ marginTop: "10px" }}
+              >
+                Submit Review
+              </button>
+
+              {/* Display Reviews */}
+              <h3>Reviews</h3>
+              {reviews.length > 0 ? (
+                reviews.map((review: any, index: number) => (
+                  <div
+                    key={index}
+                    style={{
+                      marginBottom: "10px",
+                      borderBottom: "1px solid #ddd",
+                      paddingBottom: "10px",
+                    }}
+                  >
+                    <div>
+                      <strong>User {review.user_id}</strong> ({review.rating}{" "}
+                      Stars)
+                    </div>
+                    <div>{review.comment}</div>
+                    <div style={{ fontSize: "12px", color: "#999" }}>
+                      {new Date(review.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div>No reviews yet.</div>
+              )}
+            </div>
           </div>
         )}
       </div>
